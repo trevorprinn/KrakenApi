@@ -32,6 +32,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace KrakenApi
 {
@@ -1269,7 +1270,7 @@ namespace KrakenApi
             catch (Exception) { return ""; }
         }
 
-        public string QueryPublic(string method, Dictionary<string, string> param = null)
+        public async Task<string> QueryPublicAsync(string method, Dictionary<string, string> param = null)
         {
             RateLimit();
 
@@ -1283,16 +1284,16 @@ namespace KrakenApi
             if (!String.IsNullOrEmpty(postData))
             {
                 using (var writer = new StreamWriter(webRequest.GetRequestStream()))
-                    writer.Write(postData);
+                    await writer.WriteAsync(postData);
             }
 
             try
             {
-                using (WebResponse webResponse = webRequest.GetResponse())
+                using (WebResponse webResponse = await webRequest.GetResponseAsync())
                 {
                     Stream str = webResponse.GetResponseStream();
                     using (StreamReader sr = new StreamReader(str))
-                        return sr.ReadToEnd();
+                        return await sr.ReadToEndAsync();
                 }
             }
             catch (WebException wex)
@@ -1307,13 +1308,13 @@ namespace KrakenApi
                     {
                         if (response.StatusCode != HttpStatusCode.InternalServerError)
                             throw;
-                        return sr.ReadToEnd();
+                        return await sr.ReadToEndAsync();
                     }
                 }
             }
         }
 
-        private string QueryPrivate(string method, Dictionary<string, string> param = null)
+        private async Task<string> QueryPrivateAsync(string method, Dictionary<string, string> param = null)
         {
             RateLimit();
 
@@ -1336,17 +1337,17 @@ namespace KrakenApi
             if (postData != null)
             {
                 using (var writer = new StreamWriter(webRequest.GetRequestStream()))
-                    writer.Write(postData);
+                    await writer.WriteAsync(postData);
             }
 
             //Make the request
             try
             {
-                using (WebResponse webResponse = webRequest.GetResponse())
+                using (WebResponse webResponse = await webRequest.GetResponseAsync())
                 {
                     Stream str = webResponse.GetResponseStream();
                     using (StreamReader sr = new StreamReader(str))
-                        return sr.ReadToEnd();
+                        return await sr.ReadToEndAsync();
                 }
             }
             catch (WebException wex)
@@ -1361,7 +1362,7 @@ namespace KrakenApi
                     {
                         if (response.StatusCode != HttpStatusCode.InternalServerError)
                             throw;
-                        return sr.ReadToEnd();
+                        return await sr.ReadToEndAsync();
                     }
                 }
             }
@@ -1393,9 +1394,9 @@ namespace KrakenApi
         /// </summary>
         /// <returns></returns>
         /// <exception cref="KrakenApi.KrakenException"></exception>
-        public GetServerTimeResult GetServerTime()
+        public async Task<GetServerTimeResult> GetServerTimeAsync()
         {
-            string res = QueryPublic("Time");
+            string res = await QueryPublicAsync("Time");
             var ret = JsonConvert.DeserializeObject<GetServerTimeResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1410,7 +1411,7 @@ namespace KrakenApi
         /// <param name="asset">The asset.</param>
         /// <returns></returns>
         /// <exception cref="KrakenException"></exception>
-        public Dictionary<string, AssetInfo> GetAssetInfo(string info = null, string aclass = null, string asset = null)
+        public async Task<Dictionary<string, AssetInfo>> GetAssetInfoAsync(string info = null, string aclass = null, string asset = null)
         {
             var param = new Dictionary<string, string>();
             if (info != null)
@@ -1420,7 +1421,7 @@ namespace KrakenApi
             if (asset != null)
                 param.Add("asset", asset);
 
-            var res = QueryPublic("Assets", param);
+            var res = await QueryPublicAsync("Assets", param);
             var ret = JsonConvert.DeserializeObject<GetAssetInfoResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1441,7 +1442,7 @@ namespace KrakenApi
         /// <param name="pair">comma delimited list of asset pairs to get info on (optional.  default = all).</param>
         /// <returns></returns>
         /// <exception cref="KrakenException"></exception>
-        public Dictionary<string, AssetPair> GetAssetPairs(string info = null, string pair = null)
+        public async Task<Dictionary<string, AssetPair>> GetAssetPairsAsync(string info = null, string pair = null)
         {
             var param = new Dictionary<string, string>();
             if (info != null)
@@ -1449,7 +1450,7 @@ namespace KrakenApi
             if (pair != null)
                 param.Add("pair", pair);
 
-            var res = QueryPublic("AssetPairs", param);
+            var res = await QueryPublicAsync("AssetPairs", param);
             var ret = JsonConvert.DeserializeObject<GetAssetPairsResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1460,12 +1461,12 @@ namespace KrakenApi
         /// Gets the ticker info.
         /// </summary>
         /// <param name="pair">Comma delimited list of asset pairs to get info on</param>
-        public Dictionary<string, Ticker> GetTicker(string pair)
+        public async Task<Dictionary<string, Ticker>> GetTickerAsync(string pair)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", pair);
 
-            var res = QueryPublic("Ticker", param);
+            var res = await QueryPublicAsync("Ticker", param);
             var ret = JsonConvert.DeserializeObject<GetTickerResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1478,7 +1479,7 @@ namespace KrakenApi
         /// <param name="pair">The pair.</param>
         /// <param name="interval">The interval.</param>
         /// <param name="since">The since.</param>
-        public GetOHLCResult GetOHLC(string pair, int? interval = null, int? since = null)
+        public async Task<GetOHLCResult> GetOHLCAsync(string pair, int? interval = null, int? since = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", pair);
@@ -1487,7 +1488,7 @@ namespace KrakenApi
             if (since != null)
                 param.Add("since", since.ToString());
 
-            var res = QueryPublic("OHLC", param);
+            var res = await QueryPublicAsync("OHLC", param);
 
             JObject obj = (JObject)JsonConvert.DeserializeObject(res);
             JArray err = (JArray)obj["error"];
@@ -1522,14 +1523,14 @@ namespace KrakenApi
         /// </summary>
         /// <param name="pair">The pair.</param>
         /// <param name="count">The count.</param>
-        public Dictionary<string, OrderBook> GetOrderBook(string pair, int? count = null)
+        public async Task<Dictionary<string, OrderBook>> GetOrderBookAsync(string pair, int? count = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", pair);
             if (count != null)
                 param.Add("count", count.ToString());
 
-            var res = QueryPublic("Depth", param);
+            var res = await QueryPublicAsync("Depth", param);
             var ret = JsonConvert.DeserializeObject<GetOrderBookResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1541,14 +1542,14 @@ namespace KrakenApi
         /// </summary>
         /// <param name="pair">The pair.</param>
         /// <param name="since">The timestamp since when values should be returned.</param>
-        public GetRecentTradesResult GetRecentTrades(string pair, int? since = null)
+        public async Task<GetRecentTradesResult> GetRecentTradesAsync(string pair, int? since = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", pair);
             if (since != null)
                 param.Add("since", since.ToString());
 
-            var res = QueryPublic("Trades", param);
+            var res = await QueryPublicAsync("Trades", param);
 
             JObject obj = (JObject)JsonConvert.DeserializeObject(res);
             JArray err = (JArray)obj["error"];
@@ -1600,14 +1601,14 @@ namespace KrakenApi
         /// </summary>
         /// <param name="pair">The pair.</param>
         /// <param name="since">The since.</param>
-        public GetRecentSpreadResult GetRecentSpread(string pair, int? since = null)
+        public async Task<GetRecentSpreadResult> GetRecentSpread(string pair, int? since = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", pair);
             if (since != null)
                 param.Add("since", since.ToString());
 
-            var res = QueryPublic("Spread", param);
+            var res = await QueryPublicAsync("Spread", param);
 
             JObject obj = (JObject)JsonConvert.DeserializeObject(res);
             JArray err = (JArray)obj["error"];
@@ -1656,9 +1657,9 @@ namespace KrakenApi
         /// Gets the account balance.
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, decimal> GetAccountBalance()
+        public async Task<Dictionary<string, decimal>> GetAccountBalanceAsync()
         {
-            var res = QueryPrivate("Balance");
+            var res = await QueryPrivateAsync("Balance");
             var ret = JsonConvert.DeserializeObject<GetBalanceResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1672,7 +1673,7 @@ namespace KrakenApi
         /// <param name="asset">Base asset used to determine balance (default = ZUSD).</param>
         /// <returns></returns>
         /// <exception cref="KrakenException"></exception>
-        public TradeBalanceInfo GetTradeBalance(string aclass = null, string asset = null)
+        public async Task<TradeBalanceInfo> GetTradeBalanceAsync(string aclass = null, string asset = null)
         {
             var param = new Dictionary<string, string>();
             if (aclass != null)
@@ -1680,7 +1681,7 @@ namespace KrakenApi
             if (asset != null)
                 param.Add("asset", asset);
 
-            var res = QueryPrivate("TradeBalance");
+            var res = await QueryPrivateAsync("TradeBalance");
             var ret = JsonConvert.DeserializeObject<GetTradeBalanceResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1693,7 +1694,7 @@ namespace KrakenApi
         /// <param name="trades">Whether or not to include trades in output (optional.  default = false).</param>
         /// <param name="userref">Restrict results to given user reference id (optional).</param>
         /// <exception cref="KrakenException"></exception>
-        public Dictionary<string, OrderInfo> GetOpenOrders(bool? trades = null, string userref = null)
+        public async Task<Dictionary<string, OrderInfo>> GetOpenOrdersAsync(bool? trades = null, string userref = null)
         {
             var param = new Dictionary<string, string>();
             if (trades != null)
@@ -1701,7 +1702,7 @@ namespace KrakenApi
             if (userref != null)
                 param.Add("userref", userref);
 
-            var res = QueryPrivate("OpenOrders");
+            var res = await QueryPrivateAsync("OpenOrders");
 
             JObject obj = (JObject)JsonConvert.DeserializeObject(res);
             JArray err = (JArray)obj["error"];
@@ -1732,7 +1733,7 @@ namespace KrakenApi
         ///     both(default).</param>
         /// <returns></returns>
         /// <exception cref="KrakenException"></exception>
-        public Dictionary<string, OrderInfo> GetClosedOrders(
+        public async Task<Dictionary<string, OrderInfo>> GetClosedOrdersAsync(
             bool? trades = null,
             string userref = null,
             int? start = null,
@@ -1746,7 +1747,7 @@ namespace KrakenApi
             if (userref != null)
                 param.Add("userref", userref);
 
-            var res = QueryPrivate("ClosedOrders");
+            var res = await QueryPrivateAsync("ClosedOrders");
 
             JObject obj = (JObject)JsonConvert.DeserializeObject(res);
             JArray err = (JArray)obj["error"];
@@ -1768,9 +1769,9 @@ namespace KrakenApi
         /// <param name="txid">Transaction ids to query info about (20 maximum).</param>
         /// <param name="trades">Whether or not to include trades in output (optional.  default = false).</param>
         /// <param name="userref">Restrict results to given user reference id (optional).</param>
-        public Dictionary<string, OrderInfo> QueryOrder(string txid, bool? trades = null, string userref = null)
+        public async Task<Dictionary<string, OrderInfo>> QueryOrderAsync(string txid, bool? trades = null, string userref = null)
         {
-            return QueryOrders(new string[] { txid }, trades, userref);
+            return await QueryOrdersAsync(new string[] { txid }, trades, userref);
         }
 
         /// <summary>
@@ -1779,7 +1780,7 @@ namespace KrakenApi
         /// <param name="txid">Transaction ids to query info about (20 maximum).</param>
         /// <param name="trades">Whether or not to include trades in output (optional.  default = false).</param>
         /// <param name="userref">Restrict results to given user reference id (optional).</param>
-        public Dictionary<string, OrderInfo> QueryOrders(IEnumerable<string> txid, bool? trades = null, string userref = null)
+        public async Task<Dictionary<string, OrderInfo>> QueryOrdersAsync(IEnumerable<string> txid, bool? trades = null, string userref = null)
         {
             var param = new Dictionary<string, string>();
             if (trades != null)
@@ -1788,7 +1789,7 @@ namespace KrakenApi
                 param.Add("userref", userref);
             param.Add("txid", String.Join(",", txid));
 
-            var res = QueryPrivate("QueryOrders", param);
+            var res = await QueryPrivateAsync("QueryOrders", param);
             var ret = JsonConvert.DeserializeObject<QueryOrdersResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1809,7 +1810,7 @@ namespace KrakenApi
         /// <param name="end">Ending unix timestamp or trade tx id of results (optional.  inclusive).</param>
         /// <param name="ofs">Result offset.</param>
         /// <returns></returns>
-        public GetTradesHistoryResult GetTradesHistory(string type = null, bool? trades = null, int? start = null, int? end = null, int? ofs = null)
+        public async Task<GetTradesHistoryResult> GetTradesHistoryAsync(string type = null, bool? trades = null, int? start = null, int? end = null, int? ofs = null)
         {
             var param = new Dictionary<string, string>();
             if (type != null)
@@ -1823,7 +1824,7 @@ namespace KrakenApi
             if (ofs != null)
                 param.Add("ofs", ofs.ToString());
 
-            var res = QueryPrivate("TradesHistory", param);
+            var res = await QueryPrivateAsync("TradesHistory", param);
             var ret = JsonConvert.DeserializeObject<GetTradesHistoryResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1835,9 +1836,9 @@ namespace KrakenApi
         /// </summary>
         /// <param name="txid">Transaction id to query info about.</param>
         /// <param name="trades">Whether or not to include trades related to position in output (optional.  default = false).</param>
-        public Dictionary<string, TradeInfo> QueryTrades(string txid, bool? trades = null)
+        public async Task<Dictionary<string, TradeInfo>> QueryTradesAsync(string txid, bool? trades = null)
         {
-            return QueryTrades(new string[] { txid }, trades);
+            return await QueryTradesAsync(new string[] { txid }, trades);
         }
 
         /// <summary>
@@ -1845,14 +1846,14 @@ namespace KrakenApi
         /// </summary>
         /// <param name="txid">Transaction ids to query info about (20 maximum).</param>
         /// <param name="trades">Whether or not to include trades related to position in output (optional.  default = false).</param>
-        public Dictionary<string, TradeInfo> QueryTrades(IEnumerable<string> txid, bool? trades = null)
+        public async Task<Dictionary<string, TradeInfo>> QueryTradesAsync(IEnumerable<string> txid, bool? trades = null)
         {
             var param = new Dictionary<string, string>();
             if (trades != null)
                 param.Add("trades", trades.ToString().ToLower());
             param.Add("txid", String.Join(",", txid));
 
-            var res = QueryPrivate("QueryTrades", param);
+            var res = await QueryPrivateAsync("QueryTrades", param);
             var ret = JsonConvert.DeserializeObject<QueryTradesResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1864,14 +1865,14 @@ namespace KrakenApi
         /// </summary>
         /// <param name="txid">Transaction ids to restrict output to.</param>
         /// <param name="docalcs">Whether or not to include profit/loss calculations (optional.  default = false).</param>
-        public Dictionary<string, PositionInfo> GetOpenPositions(IEnumerable<string> txid, bool? docalcs = null)
+        public async Task<Dictionary<string, PositionInfo>> GetOpenPositionsAsync(IEnumerable<string> txid, bool? docalcs = null)
         {
             var param = new Dictionary<string, string>();
             if (docalcs != null)
                 param.Add("docalcs", docalcs.ToString().ToLower());
             param.Add("txid", String.Join(",", txid));
 
-            var res = QueryPrivate("OpenPositions", param);
+            var res = await QueryPrivateAsync("OpenPositions", param);
             var ret = JsonConvert.DeserializeObject<GetOpenPositionsResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1896,7 +1897,7 @@ namespace KrakenApi
         /// <param name="start">Starting unix timestamp or ledger id of results (optional.  exclusive).</param>
         /// <param name="end">Ending unix timestamp or ledger id of results (optional.  inclusive).</param>
         /// <param name="ofs">Result offset.</param>
-        public GetLedgerResult GetLedgers(
+        public async Task<GetLedgerResult> GetLedgersAsync(
             string aclass = null,
             IEnumerable<string> asset = null,
             string type = null,
@@ -1918,7 +1919,7 @@ namespace KrakenApi
             if (ofs != null)
                 param.Add("ofs", ofs.ToString());
 
-            var res = QueryPrivate("Ledgers", param);
+            var res = await QueryPrivateAsync("Ledgers", param);
             var ret = JsonConvert.DeserializeObject<GetLedgerResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1929,12 +1930,12 @@ namespace KrakenApi
         /// Queries the ledgers.
         /// </summary>
         /// <param name="id">List of ledger ids to query info about (20 maximum).</param>
-        public Dictionary<string, LedgerInfo> QueryLedgers(IEnumerable<string> id)
+        public async Task<Dictionary<string, LedgerInfo>> QueryLedgersAsync(IEnumerable<string> id)
         {
             var param = new Dictionary<string, string>();
             param.Add("id", String.Join(",", id));
 
-            var res = QueryPrivate("QueryLedgers", param);
+            var res = await QueryPrivateAsync("QueryLedgers", param);
             var ret = JsonConvert.DeserializeObject<QueryLedgersResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1946,7 +1947,7 @@ namespace KrakenApi
         /// </summary>
         /// <param name="pair">List of asset pairs to get fee info on (optional).</param>
         /// <param name="feeInfo">Whether or not to include fee info in results (optional).</param>
-        public GetTradeVolumeResult GetTradeVolume(IEnumerable<string> pair = null, bool? feeInfo = null)
+        public async Task<GetTradeVolumeResult> GetTradeVolumeAsync(IEnumerable<string> pair = null, bool? feeInfo = null)
         {
             var param = new Dictionary<string, string>();
             if (pair != null)
@@ -1954,7 +1955,7 @@ namespace KrakenApi
             if (feeInfo != null)
                 param.Add("fee-info", feeInfo.ToString().ToLower());
 
-            var res = QueryPrivate("TradeVolume", param);
+            var res = await QueryPrivateAsync("TradeVolume", param);
             var ret = JsonConvert.DeserializeObject<GetTradeVolumeResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -1965,7 +1966,7 @@ namespace KrakenApi
 
         #region Private User Trading
 
-        public AddOrderResult AddOrder(KrakenOrder order)
+        public async Task<AddOrderResult> AddOrderAsync(KrakenOrder order)
         {
             var param = new Dictionary<string, string>();
             param.Add("pair", order.Pair);
@@ -1996,7 +1997,7 @@ namespace KrakenApi
                 param.Add("close[price2]", order.Close["price2"]);
             }
 
-            var res = QueryPrivate("AddOrder", param);
+            var res = await QueryPrivateAsync("AddOrder", param);
             var ret = JsonConvert.DeserializeObject<AddOrderResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2014,12 +2015,12 @@ namespace KrakenApi
         /// Transaction id.
         /// Note: txid may be a user reference id.
         /// </param>
-        public CancelOrderResult CancelOrder(string txid)
+        public async Task<CancelOrderResult> CancelOrderAsync(string txid)
         {
             var param = new Dictionary<string, string>();
             param.Add("txid", txid);
 
-            var res = QueryPrivate("CancelOrder", param);
+            var res = await QueryPrivateAsync("CancelOrder", param);
             var ret = JsonConvert.DeserializeObject<CancelOrderResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2037,7 +2038,7 @@ namespace KrakenApi
         /// Asset class (optional):
         /// currency(default).</param>
         /// <param name="asset">Asset being deposited.</param>
-        public GetDepositMethodsResult[] GetDepositMethods(string aclass = null, string asset = null)
+        public async Task<GetDepositMethodsResult[]> GetDepositMethodsAsync(string aclass = null, string asset = null)
         {
             var param = new Dictionary<string, string>();
             if (aclass != null)
@@ -2045,7 +2046,7 @@ namespace KrakenApi
             if (asset != null)
                 param.Add("asset", asset);
 
-            var res = QueryPrivate("DepositMethods", param);
+            var res = await QueryPrivateAsync("DepositMethods", param);
             var ret = JsonConvert.DeserializeObject<GetDepositMethodsResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2061,7 +2062,7 @@ namespace KrakenApi
         /// Asset class (optional):
         /// currency(default).</param>
         /// <param name="new">Whether or not to generate a new address (optional.  default = false).</param>
-        public GetDepositAddressesResult GetDepositAddresses(string asset, string method, string aclass = null, bool? @new = null)
+        public async Task<GetDepositAddressesResult> GetDepositAddressesAsync(string asset, string method, string aclass = null, bool? @new = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2071,7 +2072,7 @@ namespace KrakenApi
             if (@new != null)
                 param.Add("new", @new.ToString().ToLower());
 
-            var res = QueryPrivate("DepositAddresses", param);
+            var res = await QueryPrivateAsync("DepositAddresses", param);
             var ret = JsonConvert.DeserializeObject<GetDepositAddressesResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2086,7 +2087,7 @@ namespace KrakenApi
         /// <param name="aclass">Asset class (optional):
         /// currency(default).</param>
         /// <returns></returns>
-        public GetDepositStatusResult[] GetDepositStatus(string asset, string method, string aclass = null)
+        public async Task<GetDepositStatusResult[]> GetDepositStatusAsync(string asset, string method, string aclass = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2094,7 +2095,7 @@ namespace KrakenApi
             if (aclass != null)
                 param.Add("aclass", aclass);
 
-            var res = QueryPrivate("DepositStatus", param);
+            var res = await QueryPrivateAsync("DepositStatus", param);
             var ret = JsonConvert.DeserializeObject<GetDepositStatusResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2110,7 +2111,7 @@ namespace KrakenApi
         /// <param name="aclass">Asset class (optional):
         /// currency(default).</param>
         /// <returns></returns>
-        public GetWithdrawInfoResult GetWithdrawInfo(string asset, string key, decimal amount, string aclass = null)
+        public async Task<GetWithdrawInfoResult> GetWithdrawInfoAsync(string asset, string key, decimal amount, string aclass = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2119,7 +2120,7 @@ namespace KrakenApi
             if (aclass != null)
                 param.Add("aclass", aclass);
 
-            var res = QueryPrivate("WithdrawInfo", param);
+            var res = await QueryPrivateAsync("WithdrawInfo", param);
             var ret = JsonConvert.DeserializeObject<GetWithdrawInfoResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2135,7 +2136,7 @@ namespace KrakenApi
         /// <param name="aclass">Asset class (optional):
         /// currency(default).</param>
         /// <returns>The reference id.</returns>
-        public string Withdraw(string asset, string key, decimal amount, string aclass = null)
+        public async Task<string> WithdrawAsync(string asset, string key, decimal amount, string aclass = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2144,7 +2145,7 @@ namespace KrakenApi
             if (aclass != null)
                 param.Add("aclass", aclass);
 
-            var res = QueryPrivate("Withdraw", param);
+            var res = await QueryPrivateAsync("Withdraw", param);
             var ret = JsonConvert.DeserializeObject<WithdrawResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2159,7 +2160,7 @@ namespace KrakenApi
         /// <param name="aclass">Asset class (optional):
         /// currency(default).</param>
         /// <returns></returns>
-        public GetWithdrawStatusResult GetWithdrawStatus(string asset, string method, string aclass = null)
+        public async Task<GetWithdrawStatusResult> GetWithdrawStatusAsync(string asset, string method, string aclass = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2167,7 +2168,7 @@ namespace KrakenApi
             if (aclass != null)
                 param.Add("aclass", aclass);
 
-            var res = QueryPrivate("WithdrawStatus", param);
+            var res = await QueryPrivateAsync("WithdrawStatus", param);
             var ret = JsonConvert.DeserializeObject<GetWithdrawStatusResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
@@ -2184,7 +2185,7 @@ namespace KrakenApi
         /// <param name="refid">Withdrawal reference id.</param>
         /// <param name="aclass">Asset class (optional):
         /// currency(default).</param>
-        public bool WithdrawCancel(string asset, string refid, string aclass = null)
+        public async Task<bool> WithdrawCancelAsync(string asset, string refid, string aclass = null)
         {
             var param = new Dictionary<string, string>();
             param.Add("asset", asset);
@@ -2192,7 +2193,7 @@ namespace KrakenApi
             if (aclass != null)
                 param.Add("aclass", aclass);
 
-            var res = QueryPrivate("WithdrawCancel", param);
+            var res = await QueryPrivateAsync("WithdrawCancel", param);
             var ret = JsonConvert.DeserializeObject<WithdrawCancelResponse>(res);
             if (ret.Error.Count != 0)
                 throw new KrakenException(ret.Error[0], ret);
