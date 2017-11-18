@@ -1248,7 +1248,7 @@ namespace KrakenApi
         /// <param name="key">The API key.</param>
         /// <param name="secret">The API secret.</param>
         /// <param name="rateLimitMilliseconds">The rate limit in milliseconds.</param>
-        public Kraken(string key, string secret, int rateLimitMilliseconds = 5000)
+        public Kraken(string key = null, string secret = null, int rateLimitMilliseconds = 5000)
         {
             _url = "https://api.kraken.com";
             _version = 0;
